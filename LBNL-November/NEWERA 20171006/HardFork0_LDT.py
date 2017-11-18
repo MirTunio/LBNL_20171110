@@ -14,7 +14,8 @@ TriggerIndex = 0
 
 
 tdms_files = glob.glob('*.tdms')
-tdms_files = [tdms_files[-3]]
+#tdms_files = [tdms_files[-3]]
+#tdms_files = tdms_files[-5:]
 
 print(len(tdms_files))
 
@@ -156,7 +157,7 @@ BESTLOG.index = BESTLOG['Quench No.']
 BESTLOG = BESTLOG.sort_values('Quench No.')
 
 del BESTLOG['Quench No.']
-BESTLOG.to_csv('BESTLOG_3.csv')
+BESTLOG.to_csv('BESTLOG_4.csv')
 
 #%% DO IT AGAIN: CLOSER
 UBERLOG = pd.DataFrame(columns = ['Quench No.','File','Start','Stop','S1','S2','S3','S4','S5','S6','S8','S9'])
@@ -175,7 +176,7 @@ for i in np.arange(len(BESTLOG)):
     
     COLS = TDDF.columns
     
-    AFTBUFFER = 500
+    AFTBUFFER = 1000
     FOREBUFFER = 500
     
     for colnum in AcousticIndexes:        
@@ -255,7 +256,7 @@ UBERLOG.index = UBERLOG['Quench No.']
 UEBRLOG = UBERLOG.sort_values('Quench No.')
 
 del UBERLOG['Quench No.']
-UBERLOG.to_csv('UBERLOG.csv')
+UBERLOG.to_csv('UBERLOG_4_should_work.csv')
 
 BESTLOG = UBERLOG.copy()
 #%%
@@ -357,7 +358,7 @@ def inspect_voltage(AcousticIndexes,BESTLOG):
         for i in np.arange(len(AcousticIndexes)):
             
             mid = 0
-            off = 2000        
+            off = 1000        
             
             IL = pd.rolling_mean(TDDF[TDDF.columns[2]],500)
             OL = pd.rolling_mean(TDDF[TDDF.columns[3]],500)
@@ -390,7 +391,7 @@ def inspect_voltage(AcousticIndexes,BESTLOG):
             plt.axvline(MARK,c='r',linewidth=1)
             plt.title(title)            
             
-            AFTBUFFER = 500
+            AFTBUFFER = 1000
             FOREBUFFER = 500
             channel_data = TDDF[COLS[i]].iloc[MARK-FOREBUFFER:MARK+AFTBUFFER]
             channel_val = channel_data.values        
@@ -419,11 +420,11 @@ def inspect_voltage(AcousticIndexes,BESTLOG):
             plt.title(title)
             plt.legend()
             plt.grid()
-            #plt.savefig('UBER' + FILE + '_channel_' +  channels[i] + '_start_' + str(MARK)+'.jpg')
-            #plt.cla()
-            #plt.clf()
+            plt.savefig('UBER2' + FILE + '_channel_' +  channels[i] + '_start_' + str(MARK)+'.jpg')
+            plt.cla()
+            plt.clf()
 
-            plt.show()
+            #plt.show()
             
             #if i == 2:
             #    break
@@ -499,12 +500,7 @@ def LoadOne(filename):
      (AcousticData*10000-10000).plot(alpha=0.5,ax=ax,color='grey')
      return None
      
-LoadOne(tdms_files[0])    
+#LoadOne(tdms_files[0])    
      
      #400 fore aft??
-     
-     
-     
-     
-     
      
