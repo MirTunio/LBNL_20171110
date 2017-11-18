@@ -14,6 +14,7 @@ TriggerIndex = 0
 
 
 tdms_files = glob.glob('*.tdms')
+#tdms_files = ['8_9_2017_5_13_12_PM_A08_Q5_10647A.tdms']
 
 print(len(tdms_files))
 
@@ -44,8 +45,8 @@ def getVoltageCare(VoltageIndexes,tddf):
     IL = pd.rolling_mean(tddf[columns[VoltageIndexes[0]]],500)
     OL = pd.rolling_mean(tddf[columns[VoltageIndexes[1]]],500)
     
-    IL = IL-IL.dropna().iloc[:20].mean()
-    OL = OL-OL.dropna().iloc[:20].mean()
+    IL = IL-IL.dropna().iloc[:200].mean()
+    OL = OL-OL.dropna().iloc[:200].mean()
     
     VDIF = np.abs(IL-OL)
     care = np.nonzero(VDIF > crossover_threshold)[0][0]
@@ -88,7 +89,7 @@ for file in tdms_files:
 
 def getStart(envelope):
     DFENV = pd.DataFrame(envelope)
-    minima = DFENV.dropna().idxmin().values[0]
+    minima = DFENV.dropna().idxmin().values[0] #THIS IS THE PROBLEM
     return minima#np.argmin(envelope)
 #%%
 
@@ -153,7 +154,7 @@ BESTLOG.index = BESTLOG['Quench No.']
 BESTLOG = BESTLOG.sort_values('Quench No.')
 
 del BESTLOG['Quench No.']
-BESTLOG.to_csv('NEWRA0.csv')
+BESTLOG.to_csv('CHANGEDSTOPPOS1000.csv')
 
 '''
 > Consider using current to make starts happen, cut around that
@@ -202,6 +203,7 @@ def inspect(AcousticIndexes,BESTLOG):
             IL.iloc[START-STARTOFFSET:STOP+STOPOFFSET].plot(ax=ax,linewidth=2)
             OL.iloc[START-STARTOFFSET:STOP+STOPOFFSET].plot(ax=ax,linewidth=2)
             
+            
             print(COLS[i])
             print(title)
             
@@ -213,13 +215,82 @@ def inspect(AcousticIndexes,BESTLOG):
             
             plt.legend()
             plt.grid()
-            plt.savefig(FILE + '_channel_' +  channels[i] + '_start_' + str(MARK)+'.jpg')
-            plt.cla()
-            plt.clf()
+            #plt.savefig(FILE + '_channel_' +  channels[i] + '_start_' + str(MARK)+'.jpg')
+            #plt.cla()
+            #plt.clf()
 
-            #plt.show()
-        
+            plt.show()
+#                 
+#            ENV = MakePreciseEnvelope(AUDIO)
+#            plt.plot(ENV)
+#            plt.show()
 #inspect(AcousticIndexes,BESTLOG)#.iloc[:2])#.sample(2))
 #inspect(AcousticIndexes,BESTLOG)      
         
+#%% Inspect Voltage Triggers
+def inspect_voltage(AcousticIndexes,BESTLOG):
+    
+    for i in np.arange(len(BESTLOG)):
         
+        STARTOFFSET = 2000# 1000#60000
+        STOPOFFSET = 0# 1000#4000
+        
+        QUENCH = BESTLOG.iloc[i]
+        FILE = QUENCH.File+'.tdms'
+        START = QUENCH.Start
+        STOP = QUENCH.Stop
+        BestStart = np.array([QUENCH.S1,QUENCH.S2,QUENCH.S3,QUENCH.S4,QUENCH.S5,QUENCH.S6,QUENCH.S8,QUENCH.S9])+START
+        channels = ['S1','S2','S3','S4','S5','S6','S8','S9']
+        
+        TDDF = getDataFrame(FILE)
+        COLS = TDDF.columns[AcousticIndexes]
+        
+        for i in np.arange(len(AcousticIndexes)):
+            
+            mid = 0
+            off = 2000        
+            
+            IL = pd.rolling_mean(TDDF[TDDF.columns[2]],500)
+            OL = pd.rolling_mean(TDDF[TDDF.columns[3]],500)
+            
+            IL = IL-IL.dropna().iloc[:200].mean()
+            OL = OL-OL.dropna().iloc[:200].mean()    
+            
+            VDIF = np.abs(IL-OL)
+            
+            ax = VDIF.iloc[START-STARTOFFSET:STOP+STOPOFFSET].plot(label='VDIF')
+            IL.iloc[START-STARTOFFSET:STOP+STOPOFFSET].plot(ax=ax,linewidth=2)
+            OL.iloc[START-STARTOFFSET:STOP+STOPOFFSET].plot(ax=ax,linewidth=2)
+            
+            MARK = BestStart[i]
+            AUDIO = TDDF[COLS[i]].iloc[START-STARTOFFSET:STOP+STOPOFFSET]
+            title = FILE + ' Channel: ' +  channels[i] + ', start:' + str(MARK)
+            
+            ENV = MakePreciseEnvelope(AUDIO)           
+            ENV_DF = pd.DataFrame(ENV,index=AUDIO.index)/400000
+            ENV_DF.plot(ax=ax)
+             
+            print(COLS[i])
+            print(title)
+            
+            plt.axvline(START,c='g',alpha=0.5,linewidth=4)
+            plt.axvline(STOP,c='r',alpha=0.5,linewidth=4)
+            
+            AUDIO.plot(c='blue',alpha=0.4,ax=ax,secondary_y=True)
+            plt.plot(MARK,np.mean(AUDIO),marker='x',linewidth=0,markerSize=14,c='r')
+            plt.axvline(MARK,c='r',linewidth=1)
+            plt.title(title)            
+            
+            mid = MARK
+            plt.xlim(mid-off,mid+off)
+            
+            plt.title(title)
+            plt.legend()
+            plt.grid()
+
+            plt.show()
+            
+            #if i == 0:
+            #    break
+            
+inspect_voltage(AcousticIndexes,BESTLOG)           
