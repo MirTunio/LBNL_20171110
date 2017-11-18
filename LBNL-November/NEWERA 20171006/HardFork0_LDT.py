@@ -14,7 +14,7 @@ TriggerIndex = 0
 
 
 tdms_files = glob.glob('*.tdms')
-#tdms_files = ['8_9_2017_5_13_12_PM_A08_Q5_10647A.tdms']
+tdms_files = [tdms_files[-4:][-2]]
 
 print(len(tdms_files))
 
@@ -40,7 +40,7 @@ def getTriggerCare(AcousticIndexes, Trigger_Index, tddf):
 
 def getVoltageCare(VoltageIndexes,tddf):
     columns = tddf.columns
-    crossover_threshold = 0.06
+    crossover_threshold = 0.12
     
     IL = pd.rolling_mean(tddf[columns[VoltageIndexes[0]]],500)
     OL = pd.rolling_mean(tddf[columns[VoltageIndexes[1]]],500)
@@ -86,10 +86,13 @@ for file in tdms_files:
         continue
     
     LOG = LOG.append(temp, ignore_index=True)
-
+check =[]
 def getStart(envelope):
+    global check
     DFENV = pd.DataFrame(envelope)
-    minima = DFENV.dropna().idxmin().values[0] #THIS IS THE PROBLEM
+    minimas = DFENV.dropna().idxmin().values #THIS IS THE PROBLEM
+    minima = minimas[0]
+    check = minimas
     return minima#np.argmin(envelope)
 #%%
 
@@ -138,7 +141,7 @@ for i in np.arange(len(LOG)):
         elif colnum == 11:
             temp['S4'] = getStart(channel_env)
         elif colnum == 13:
-            temp['S6'] = getStart(channel_env)            
+            temp['S6'] = getStart(channel_env)
 
 #        plt.plot(channel_val)
 #        plt.plot(trigger/10)
@@ -154,7 +157,7 @@ BESTLOG.index = BESTLOG['Quench No.']
 BESTLOG = BESTLOG.sort_values('Quench No.')
 
 del BESTLOG['Quench No.']
-BESTLOG.to_csv('CHANGEDSTOPPOS1000.csv')
+BESTLOG.to_csv('TEST120MV.csv')
 
 '''
 > Consider using current to make starts happen, cut around that
