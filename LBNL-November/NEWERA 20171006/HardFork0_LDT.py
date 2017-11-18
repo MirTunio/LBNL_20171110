@@ -500,7 +500,3 @@ def LoadOne(filename):
      (AcousticData*10000-10000).plot(alpha=0.5,ax=ax,color='grey')
      return None
      
-#LoadOne(tdms_files[0])    
-     
-     #400 fore aft??
-     
