@@ -14,7 +14,7 @@ TriggerIndex = 0
 
 
 tdms_files = glob.glob('*.tdms')
-tdms_files = [tdms_files[-4:][-2]]
+tdms_files = [tdms_files[-3]]
 
 print(len(tdms_files))
 
@@ -40,7 +40,7 @@ def getTriggerCare(AcousticIndexes, Trigger_Index, tddf):
 
 def getVoltageCare(VoltageIndexes,tddf):
     columns = tddf.columns
-    crossover_threshold = 0.12
+    crossover_threshold = 0.06
     
     IL = pd.rolling_mean(tddf[columns[VoltageIndexes[0]]],500)
     OL = pd.rolling_mean(tddf[columns[VoltageIndexes[1]]],500)
@@ -59,7 +59,7 @@ def MakePreciseEnvelope(AcousticData):
     
     for i in np.arange(len(raw)):
         newENV.append(AIC(raw,i,len(raw)))
-        
+
     return newENV
 
 def AIC(x,k,N):
@@ -86,14 +86,13 @@ for file in tdms_files:
         continue
     
     LOG = LOG.append(temp, ignore_index=True)
-check =[]
+
 def getStart(envelope):
-    global check
     DFENV = pd.DataFrame(envelope)
-    minimas = DFENV.dropna().idxmin().values #THIS IS THE PROBLEM
-    minima = minimas[0]
-    check = minimas
+    minima = DFENV.dropna().idxmin().values[0] #THIS IS THE PROBLEM
+
     return minima#np.argmin(envelope)
+
 #%%
 
 BESTLOG = pd.DataFrame(columns = ['Quench No.','File','Start','Stop','S1','S2','S3','S4','S5','S6','S8','S9'])
@@ -141,7 +140,7 @@ for i in np.arange(len(LOG)):
         elif colnum == 11:
             temp['S4'] = getStart(channel_env)
         elif colnum == 13:
-            temp['S6'] = getStart(channel_env)
+            temp['S6'] = getStart(channel_env)            
 
 #        plt.plot(channel_val)
 #        plt.plot(trigger/10)
@@ -157,13 +156,108 @@ BESTLOG.index = BESTLOG['Quench No.']
 BESTLOG = BESTLOG.sort_values('Quench No.')
 
 del BESTLOG['Quench No.']
-BESTLOG.to_csv('TEST120MV.csv')
+BESTLOG.to_csv('BESTLOG_3.csv')
 
-'''
-> Consider using current to make starts happen, cut around that
-> Make sure starts are accurate
+#%% DO IT AGAIN: CLOSER
+UBERLOG = pd.DataFrame(columns = ['Quench No.','File','Start','Stop','S1','S2','S3','S4','S5','S6','S8','S9'])
 
-'''
+
+for i in np.arange(len(BESTLOG)):
+    BESTDATA = BESTLOG.iloc[i]
+    FILE = BESTDATA.File+'.tdms'
+    START = BESTDATA.Start
+    STOP = BESTDATA.Stop
+    
+    print('Uber Processing File: ' + FILE)
+    
+    temp = {'Quench No.':None,'File':FILE[:-5],'Start':START,'Stop':STOP,'S1':None,'S2':None,'S3':None,'S4':None,'S5':None,'S6':None,'S8':None,'S9':None}
+    
+    
+    COLS = TDDF.columns
+    
+    AFTBUFFER = 500
+    FOREBUFFER = 500
+    
+    for colnum in AcousticIndexes:        
+        #Getting quench number from filename
+        numdex = FILE.index('Q')
+        goodname0 = FILE[numdex+1:]
+        dashdex = goodname0.index('_')
+        goodname1 = goodname0[:dashdex]
+        temp['Quench No.'] = int(goodname1)
+        
+        if colnum == 8:
+            oldMARK = START + BESTDATA['S1']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)          
+            temp['S1'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 10:
+            oldMARK = START + BESTDATA['S3']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S3'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 12:
+            oldMARK = START + BESTDATA['S5']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S5'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 14:
+            oldMARK = START + BESTDATA['S8']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S8'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 15:
+            oldMARK = START + BESTDATA['S9']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S9'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 9:
+            oldMARK = START + BESTDATA['S2']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S2'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 11:           
+            oldMARK = START + BESTDATA['S4']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S4'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START
+            
+        elif colnum == 13:
+            oldMARK = START + BESTDATA['S6']
+            TDDF = getDataFrame(FILE).iloc[oldMARK - FOREBUFFER:oldMARK + AFTBUFFER]
+            channel_data = TDDF[COLS[colnum]]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)
+            temp['S6'] = getStart(channel_env)  + oldMARK - FOREBUFFER - START    
+
+    UBERLOG = UBERLOG.append(temp,ignore_index=True)
+UBERLOG.index = UBERLOG['Quench No.']
+UEBRLOG = UBERLOG.sort_values('Quench No.')
+
+del UBERLOG['Quench No.']
+UBERLOG.to_csv('UBERLOG.csv')
+
+BESTLOG = UBERLOG.copy()
 #%%
 def inspect(AcousticIndexes,BESTLOG):
     
@@ -231,6 +325,18 @@ def inspect(AcousticIndexes,BESTLOG):
 #inspect(AcousticIndexes,BESTLOG)      
         
 #%% Inspect Voltage Triggers
+#def MakePreciseEnvelope(AcousticData):
+#    raw = AcousticData
+#    newENV = []
+#    
+#    for i in np.arange(len(raw)):
+#        newENV.append(AIC(raw,i,len(raw)))
+#        
+#    return newENV
+#
+#def AIC(x,k,N):
+#    return k*np.log(np.var(x[1:k]))-5*(N - k - 1)*np.log(np.var(x[k+1:N]))
+
 def inspect_voltage(AcousticIndexes,BESTLOG):
     
     for i in np.arange(len(BESTLOG)):
@@ -284,16 +390,121 @@ def inspect_voltage(AcousticIndexes,BESTLOG):
             plt.axvline(MARK,c='r',linewidth=1)
             plt.title(title)            
             
+            AFTBUFFER = 500
+            FOREBUFFER = 500
+            channel_data = TDDF[COLS[i]].iloc[MARK-FOREBUFFER:MARK+AFTBUFFER]
+            channel_val = channel_data.values        
+            channel_env = MakePreciseEnvelope(channel_val)  
+            
+            ENV_DF = pd.DataFrame(channel_env,index=channel_data.index)/200000       
+            ENV_DF = ENV_DF-(pd.rolling_mean(ENV_DF,15).diff())*30
+            ENV_DF.plot(ax=ax,c='black')         
+#  
+#            ENV_DF = pd.DataFrame(channel_env,index=channel_data.index)/400000       
+#            ENV_DF = pd.rolling_mean(1000*ENV_DF.diff(),30)
+#            ENV_DF.plot(ax=ax,c='purple') 
+#
+#            ENV_DF = pd.DataFrame(channel_env,index=channel_data.index)/400000       
+#            ENV_DF = 1000*pd.rolling_mean(ENV_DF,30).diff()
+#            ENV_DF.plot(ax=ax,c='orange') 
+            
+#            ENV_DF_2 = ((pd.DataFrame(channel_env,index=channel_data.index)/40000).diff().abs())-0.05
+#            ENV_DF_2.plot(ax=ax,c='purple',alpha=0.5) 
+#            
+#            (ENV_DF-ENV_DF_2).plot(ax=ax,c='orange') 
+            
             mid = MARK
             plt.xlim(mid-off,mid+off)
             
             plt.title(title)
             plt.legend()
             plt.grid()
+            #plt.savefig('UBER' + FILE + '_channel_' +  channels[i] + '_start_' + str(MARK)+'.jpg')
+            #plt.cla()
+            #plt.clf()
 
             plt.show()
             
-            #if i == 0:
+            #if i == 2:
             #    break
             
-inspect_voltage(AcousticIndexes,BESTLOG)           
+inspect_voltage(AcousticIndexes,BESTLOG)      
+
+#%%
+def AIC(x,k,N):
+    return k*np.log(np.var(x[1:k]))+(N - k - 1)*np.log(np.var(x[k+1:N]))
+
+def MakePreciseEnvelope(AcousticData):
+    raw = AcousticData
+    newENV = []
+    
+    for i in np.arange(len(raw)):
+        newENV.append(AIC(raw,i,len(raw)))
+
+    return newENV
+
+def AICA(x,k,N):
+    return k*np.log(np.var(x[1:k]))
+
+def MakePreciseEnvelopeA(AcousticData):
+    raw = AcousticData
+    newENV = []
+    
+    for i in np.arange(len(raw)):
+        newENV.append(AICA(raw,i,len(raw)))
+
+    return newENV
+
+def AICB(x,k,N):
+    return (N - k - 1)*np.log(np.var(x[k+1:N]))
+
+def MakePreciseEnvelopeB(AcousticData):
+    raw = AcousticData
+    newENV = []
+    
+    for i in np.arange(len(raw)):
+        newENV.append(AICB(raw,i,len(raw)))
+
+    return newENV
+
+def LoadOne(filename):
+     TDDF = getDataFrame(filename)
+     doinconcern = TDDF.columns[10]
+     print(doinconcern)
+     AcousticData = TDDF[doinconcern].iloc[114825:117000]#112789  116789
+     Envelope = MakePreciseEnvelope(AcousticData)
+     EnvelopeA = MakePreciseEnvelopeA(AcousticData)
+     EnvelopeB = MakePreciseEnvelopeB(AcousticData)
+     
+     Env = pd.DataFrame(Envelope,index=AcousticData.index,columns=['Envelope'])
+     EnvA = pd.DataFrame(EnvelopeA,index=AcousticData.index,columns=['Part A'])
+     EnvB = pd.DataFrame(EnvelopeB,index=AcousticData.index,columns=['Part B'])
+     
+     All = pd.concat([Env,EnvA,EnvB],axis=1)
+     ax = All.plot()
+ 
+     AcousticData = TDDF[doinconcern].iloc[112789:116789]
+     Envelope = MakePreciseEnvelope(AcousticData)
+     EnvelopeA = MakePreciseEnvelopeA(AcousticData)
+     EnvelopeB = MakePreciseEnvelopeB(AcousticData)
+     
+     Env = pd.DataFrame(Envelope,index=AcousticData.index,columns=['Envelope X'])
+     EnvA = pd.DataFrame(EnvelopeA,index=AcousticData.index,columns=['Part A X'])
+     EnvB = pd.DataFrame(EnvelopeB,index=AcousticData.index,columns=['Part B X'])
+     
+     All = pd.concat([Env,EnvA,EnvB],axis=1)
+     All.plot(ax = ax)
+     
+     
+     (AcousticData*10000-10000).plot(alpha=0.5,ax=ax,color='grey')
+     return None
+     
+LoadOne(tdms_files[0])    
+     
+     #400 fore aft??
+     
+     
+     
+     
+     
+     
