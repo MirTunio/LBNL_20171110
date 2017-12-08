@@ -310,7 +310,7 @@ def ThirdPass(PreciseLog, AcousticData, filename):
     print('Uber Log generated')
     return UBERLOG
 
-#%% Additional function added to reduce logging of low frequency noise as events
+#%% Additional function added to reduce logging of low-frequency-noise as events
 def AHenv(dfseries):
     factor=50
     dex = dfseries.index
@@ -447,27 +447,5 @@ for i in np.arange(len(UberLog)):
     plt.legend()
     plt.show()
     
-#    cutten.diff().hist()
     print(Events[i])
     print()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
